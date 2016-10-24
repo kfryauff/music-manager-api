@@ -28,6 +28,16 @@ db.once('open', function() {
   // router middleware
   router.use(function(req, res, next) {
     console.log('Working...')
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:8080');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+
+    // Pass to next layer of middleware
     next()
   })
 
@@ -36,51 +46,6 @@ db.once('open', function() {
   })
 
   // Register Routes
-  // bears routes
-  router.route('/bears')
-    .post(function(req, res) {
-      var bear = new Bear()
-      bear.name = req.body.name
-      bear.save(function(err) {
-        if (err) res.send(err)
-        res.json({ message: 'Bear created!'})
-      })
-    })
-    .get(function(req, res) {
-      Bear.find(function(err, bears) {
-        if (err) res.send(err)
-        res.json(bears)
-      })
-    })
-  router.route('/bears/:bear_id')
-    .get(function(req, res) {
-      Bear.findById(req.params.bear_id, function(err, bear) {
-        if (err) res.send(err)
-        res.json(bear)
-      })
-    })
-    .put(function(req, res) {
-      Bear.findById(req.params.bear_id, function(err, bear) {
-        if (err) res.send(err)
-
-        // update bear info
-        bear.name = req.body.name
-
-        // save updates
-        bear.save(function(err) {
-          if (err) res.send(err)
-          res.json({ message: 'Bead updated!' })
-        })
-      })
-    })
-    .delete(function(req, res) {
-      Bear.remove({
-        _id: req.params.bear_id
-      }, function(err, bear) {
-        if (err) res.send(err)
-        res.json({ message: 'Successfully deleted' })
-      })
-    })
 
   // Song Routes
   router.route('/songs')
@@ -102,6 +67,7 @@ db.once('open', function() {
         res.json(songs)
       })
     })
+
   router.route('/song/:song_id')
     .get(function(req, res) {
       Song.findById(req.params.song_id, function(err, song) {
@@ -151,6 +117,7 @@ db.once('open', function() {
           res.json(playlists)
         })
       })
+
     router.route('/playlist/:playlist_id')
       .get(function(req, res) {
         Playlist.findById(req.params.playlist_id, function(err, playlist) {
@@ -180,6 +147,20 @@ db.once('open', function() {
           res.json({ message: 'Successfully deleted'})
         })
       })
+
+    router.route('/playlist/:playlist_id/songs')
+      .get(function(req, res) {
+        Playlist.findById(req.params.playlist_id, function(err, playlist) {
+          if (err) res.send(err)
+          Song.find({
+            "_id": { $in: playlist.song_ids }
+          }, function(err, songs) {
+            if (err) res.send(err)
+            res.json(songs)
+          })
+        })
+      })
+
     router.route('/playlist/:playlist_id/song/:song_id')
       .post(function(req, res) {
         Playlist.findByIdAndUpdate(
