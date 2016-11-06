@@ -99,89 +99,89 @@ db.once('open', function() {
       })
     })
 
-    // Playlist Routes
-    router.route('/playlists')
-      .post(function(req, res) {
-        var playlist = new Playlist()
+  // Playlist Routes
+  router.route('/playlists')
+    .post(function(req, res) {
+      var playlist = new Playlist()
 
-        playlist.title = req.body.title
+      playlist.title = req.body.title
+
+      playlist.save(function(err) {
+        if (err) res.send(err)
+        res.json({ message: 'Playlist Added' })
+      })
+    })
+    .get(function(req, res) {
+      Playlist.find(function(err, playlists) {
+        if (err) res.send(err)
+        res.json(playlists)
+      })
+    })
+
+  router.route('/playlist/:playlist_id')
+    .get(function(req, res) {
+      Playlist.findById(req.params.playlist_id, function(err, playlist) {
+        if (err) res.send(err)
+        res.json(playlist)
+      })
+    })
+    .put(function(req, res) {
+      Playlist.findById(req.params.playlist_id, function(err, playlist) {
+        if (err) res.send(err)
+
+        //updates
+        playlist.title = req.body.title || playlist.title
+        playlist.song_ids = req.body.song_ids || playlist.song_ids
 
         playlist.save(function(err) {
           if (err) res.send(err)
-          res.json({ message: 'Playlist Added' })
+          res.json({ message: 'Playlist updated!' })
         })
       })
-      .get(function(req, res) {
-        Playlist.find(function(err, playlists) {
-          if (err) res.send(err)
-          res.json(playlists)
-        })
+    })
+    .delete(function(req, res) {
+      Playlist.remove({
+        _id: req.params.playlist_id
+      }, function(err, playlist) {
+        if (err) res.send(err)
+        res.json({ message: 'Successfully deleted'})
       })
+    })
 
-    router.route('/playlist/:playlist_id')
-      .get(function(req, res) {
-        Playlist.findById(req.params.playlist_id, function(err, playlist) {
+  router.route('/playlist/:playlist_id/songs')
+    .get(function(req, res) {
+      Playlist.findById(req.params.playlist_id, function(err, playlist) {
+        if (err) res.send(err)
+        Song.find({
+          "_id": { $in: playlist.song_ids }
+        }, function(err, songs) {
           if (err) res.send(err)
-          res.json(playlist)
+          res.json(songs)
         })
       })
-      .put(function(req, res) {
-        Playlist.findById(req.params.playlist_id, function(err, playlist) {
-          if (err) res.send(err)
+    })
 
-          //updates
-          playlist.title = req.body.title || playlist.title
-          playlist.song_ids = req.body.song_ids || playlist.song_ids
-
-          playlist.save(function(err) {
-            if (err) res.send(err)
-            res.json({ message: 'Playlist updated!' })
-          })
-        })
-      })
-      .delete(function(req, res) {
-        Playlist.remove({
-          _id: req.params.playlist_id
+  router.route('/playlist/:playlist_id/song/:song_id')
+    .post(function(req, res) {
+      Playlist.findByIdAndUpdate(
+        req.params.playlist_id,{
+          $push: { song_ids: req.params.song_id }
         }, function(err, playlist) {
           if (err) res.send(err)
-          res.json({ message: 'Successfully deleted'})
-        })
-      })
-
-    router.route('/playlist/:playlist_id/songs')
-      .get(function(req, res) {
-        Playlist.findById(req.params.playlist_id, function(err, playlist) {
+          res.json({ message: 'Successfully added' })
+        }
+      )
+    })
+    .delete(function(req, res) {
+      Playlist.findByIdAndUpdate(
+        req.params.playlist_id,{
+          $pull: { song_ids: req.params.song_id }
+        }, function(err, playlist) {
           if (err) res.send(err)
-          Song.find({
-            "_id": { $in: playlist.song_ids }
-          }, function(err, songs) {
-            if (err) res.send(err)
-            res.json(songs)
-          })
-        })
-      })
-
-    router.route('/playlist/:playlist_id/song/:song_id')
-      .post(function(req, res) {
-        Playlist.findByIdAndUpdate(
-          req.params.playlist_id,{
-            $push: { song_ids: req.params.song_id }
-          }, function(err, playlist) {
-            if (err) res.send(err)
-            res.json({ message: 'Successfully added' })
-          }
-        )
-      })
-      .delete(function(req, res) {
-        Playlist.findByIdAndUpdate(
-          req.params.playlist_id,{
-            $pull: { song_ids: req.params.song_id }
-          }, function(err, playlist) {
-            if (err) res.send(err)
-            res.json({ message: 'Successfully removed' })
-          }
-        )
-      })
+          res.json({ message: 'Successfully removed' })
+        }
+      )
+    })
 
   app.use('/api', router)
 
